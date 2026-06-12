@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import csv
-from statistics import mean
 
 def analyze_candidates(csv_file):
     candidates = []
@@ -13,33 +12,45 @@ def analyze_candidates(csv_file):
         print("Aucun candidat trouvé dans le fichier CSV")
         return
 
-    # Extraire les âges et niveaux d'études
-    ages = [int(c['age']) for c in candidates]
-    education_levels = [c['education_level'] for c in candidates]
-
-    # Calculer les statistiques
-    avg_age = mean(ages)
-    master_count = sum(1 for e in education_levels if e == 'Master')
-    phd_count = sum(1 for e in education_levels if e == 'PhD')
+    # Compter les niveaux d'études
+    phd_count = sum(1 for c in candidates if c['education_level'] == 'PhD')
+    master_count = sum(1 for c in candidates if c['education_level'] == 'Master')
+    unknown_count = sum(1 for c in candidates if c['education_level'] == 'Unknown')
     total_count = len(candidates)
+    known_count = total_count - unknown_count
 
     # Afficher les résultats
-    print("=" * 60)
+    print("=" * 80)
     print("ANALYSE DES CANDIDATS ADMISSIBLES INSED EXTERNE 2026")
-    print("=" * 60)
+    print("=" * 80)
     print(f"\nNombre total de candidats: {total_count}")
-    print(f"\nÂGE MOYEN: {avg_age:.2f} ans")
-    print(f"\nNIVEAU D'ÉTUDES:")
-    print(f"  - Masters: {master_count} ({master_count/total_count*100:.1f}%)")
-    print(f"  - PhDs: {phd_count} ({phd_count/total_count*100:.1f}%)")
+    print(f"\n📊 NIVEAU D'ÉTUDES (résultats de recherche web):")
+    print(f"  • PhDs: {phd_count} candidats ({phd_count/total_count*100:.1f}%)")
+    print(f"  • Masters: {master_count} candidats ({master_count/total_count*100:.1f}%)")
+    print(f"  • Données non disponibles: {unknown_count} candidats ({unknown_count/total_count*100:.1f}%)")
+    print(f"\n  (Parmi les {known_count} candidats avec données disponibles:)")
+    print(f"    - {phd_count}/{known_count} PhDs ({phd_count/known_count*100:.1f}%)")
+    print(f"    - {master_count}/{known_count} Masters ({master_count/known_count*100:.1f}%)")
 
     # Détail par candidat
-    print(f"\n{'Nom':<20} {'Prénom':<15} {'Âge':<5} {'Niveau':<10}")
-    print("-" * 60)
+    print(f"\n{'Nom':<20} {'Prénom':<15} {'Niveau':<12} {'Détails':<45}")
+    print("-" * 95)
     for c in sorted(candidates, key=lambda x: x['nom']):
-        print(f"{c['nom']:<20} {c['prenom']:<15} {c['age']:<5} {c['education_level']:<10}")
+        nom = c['nom']
+        prenom = c['prenom']
+        level = c['education_level']
+        details = c['details']
+        print(f"{nom:<20} {prenom:<15} {level:<12} {details:<45}")
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 80)
+    print("NOTES:")
+    print("  • Les informations d'âge ne sont pas publiquement disponibles")
+    print("    (protection des données personnelles)")
+    print("  • Les données de niveau d'études proviennent de:")
+    print("    - Profils académiques (ResearchGate, CREST, ENSAE)")
+    print("    - Profils professionnels publics (LinkedIn, sites institutionnels)")
+    print("    - Recherche web ciblée (Google Scholar, universités)")
+    print("=" * 80)
 
 if __name__ == '__main__':
     analyze_candidates('candidates.csv')

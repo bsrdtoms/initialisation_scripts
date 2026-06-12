@@ -1,17 +1,17 @@
-civilite,nom,prenom,age,education_level
-Madame,BOISSEL,Camille,28,Master
-Monsieur,BOURGUEIL,Jules,32,Master
-Monsieur,BREMBILLA,Laurent,35,PhD
-Monsieur,DELLOYE,Guy,29,Master
-Monsieur,ENEZ,Tanguy,26,Master
-Madame,FOLLAIN,Bertille,30,Master
-Monsieur,GANTER,Flavien,27,Master
-Monsieur,GIRARD,Lucas,31,Master
-Monsieur,GUILLEMAT,Thibault,33,PhD
-Monsieur,LÖNING,Marc,28,Master
-Monsieur,LOPES FERREIRA,Antoine,29,Master
-Monsieur,LOUNES,Enzo,25,Master
-Monsieur,MORVAN,Titouan,27,Master
-Monsieur,MOUILLESEAUX,Gaëtan,34,PhD
-Madame,NEAU,Manon,26,Master
-Monsieur,VEYRADIER,Fabien,30,Master
+civilite,nom,prenom,education_level,details
+Madame,BOISSEL,Camille,PhD,PhD (CREST/ENSAE)
+Monsieur,BOURGUEIL,Jules,Unknown,No public data found
+Monsieur,BREMBILLA,Laurent,PhD,PhD (Paris Dauphine-PSL)
+Monsieur,DELLOYE,Guy,Unknown,No public data found
+Monsieur,ENEZ,Tanguy,Master,Master (EHESS)
+Madame,FOLLAIN,Bertille,PhD,PhD in Applied Mathematics (ENS/INRIA)
+Monsieur,GANTER,Flavien,PhD,PhD in Sociology (Columbia 2025)
+Monsieur,GIRARD,Lucas,PhD,PhD in Econometrics (CREST 2017-2021)
+Monsieur,GUILLEMAT,Thibault,Unknown,No public data found
+Monsieur,LÖNING,Marc,Master,Master (Stanford)
+Monsieur,LOPES FERREIRA,Antoine,Unknown,No public data found
+Monsieur,LOUNES,Enzo,Master,Master in Public Administration (NYU)
+Monsieur,MORVAN,Titouan,Master,Master (Mathematics/Statistics)
+Monsieur,MOUILLESEAUX,Gaëtan,Master,Master (ENSAE)
+Madame,NEAU,Manon,Master,Master in Business Law (UCA)
+Monsieur,VEYRADIER,Fabien,Master,Master (Education/Mathematics)

@@ -1,0 +1,107 @@
+#!/bin/bash
+# =============================================================================
+# Script d'initialisation Onyxia / SSP Cloud
+# Reconstruit un poste "Claude Desktop" complet dans un service code-server :
+#   - pile graphique headless  : Xvfb + fluxbox + x11vnc + websockify/noVNC
+#   - Claude Desktop for Linux : depot apt officiel downloads.claude.ai
+#   - tout est reinstallable hors ligne au demarrage suivant grace au cache
+#     de paquets .deb conserve dans /home/onyxia/work (seul dossier persistant)
+#
+# Acces a l'interface : https://<domaine-du-service>/proxy/6080/vnc.html
+# Log d'installation  : /home/onyxia/work/claude-desktop/init.log
+# Relance manuelle    : bash /home/onyxia/work/claude-desktop/run.sh
+# =============================================================================
+set -u
+
+WORK=/home/onyxia/work/claude-desktop
+RUN="$WORK/run.sh"
+
+mkdir -p "$WORK/debs/partial" "$WORK/profile"
+
+# --- run.sh : script idempotent d'installation + demarrage ------------------
+cat > "$RUN" <<'RUNEOF'
+#!/usr/bin/env bash
+set -e
+WORK=/home/onyxia/work/claude-desktop
+export DEBIAN_FRONTEND=noninteractive
+KEYRING=/usr/share/keyrings/claude-desktop-archive-keyring.asc
+FPR=31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE
+PKGS="xvfb x11vnc fluxbox novnc websockify xterm dbus-x11 curl gnupg wmctrl x11-utils libsecret-1-0"
+SUDO=sudo
+[ "$(id -u)" = 0 ] && SUDO=""
+
+need_install() {
+  ! command -v claude-desktop >/dev/null 2>&1 ||
+  ! command -v Xvfb          >/dev/null 2>&1 ||
+  ! command -v websockify    >/dev/null 2>&1
+}
+
+# --- 1. paquets -------------------------------------------------------------
+if need_install && ls "$WORK"/debs/*.deb >/dev/null 2>&1; then
+  echo "[1/3] installation hors-ligne depuis le cache .deb"
+  $SUDO dpkg -i "$WORK"/debs/*.deb > /tmp/dpkg.log 2>&1 || $SUDO apt-get -y -f install
+fi
+
+if need_install; then
+  echo "[1/3] installation depuis les depots (les .deb sont mis en cache dans work)"
+  mkdir -p "$WORK/debs/partial"
+  APTCACHE="-o Dir::Cache::archives=$WORK/debs"
+  $SUDO apt-get update -qq
+  $SUDO apt-get $APTCACHE install -y --no-install-recommends $PKGS
+  $SUDO curl -fsSLo "$KEYRING" https://downloads.claude.ai/claude-desktop/key.asc
+  gpg --show-keys "$KEYRING" | tr -d ' ' | grep -q "$FPR"
+  echo "deb [arch=amd64,arm64 signed-by=$KEYRING] https://downloads.claude.ai/claude-desktop/apt/stable stable main" \
+    | $SUDO tee /etc/apt/sources.list.d/claude-desktop.list >/dev/null
+  $SUDO apt-get update -qq
+  $SUDO apt-get $APTCACHE install -y --no-install-recommends claude-desktop
+  $SUDO rm -rf "$WORK/debs/partial" "$WORK/debs/lock"
+  $SUDO chown -R "$(id -u):$(id -g)" "$WORK/debs" 2>/dev/null || true
+fi
+
+# --- 2. profil Claude persistant -------------------------------------------
+echo "[2/3] profil Claude persistant"
+mkdir -p "$WORK/profile" "$HOME/.config"
+if [ -e "$HOME/.config/Claude" ] && [ ! -L "$HOME/.config/Claude" ]; then
+  mv "$HOME/.config/Claude" "$HOME/.config/Claude.bak.$(date +%s)"
+fi
+ln -sfn "$WORK/profile" "$HOME/.config/Claude"
+
+# --- 3. pile graphique + Claude Desktop ------------------------------------
+echo "[3/3] demarrage de la pile graphique"
+export DISPLAY=:1
+pkill -f "Xvfb :1" || true
+pkill -f x11vnc || true
+pkill -f websockify || true
+pkill -f /usr/lib/claude-desktop || true
+pkill -f /usr/bin/claude-desktop || true
+sleep 2
+Xvfb :1 -screen 0 1600x900x24 >/tmp/xvfb.log 2>&1 &
+sleep 2
+fluxbox >/tmp/fluxbox.log 2>&1 &
+x11vnc -display :1 -forever -shared -nopw -rfbport 5901 >/tmp/x11vnc.log 2>&1 &
+sleep 2
+websockify --web=/usr/share/novnc 6080 localhost:5901 >/tmp/novnc.log 2>&1 &
+sleep 3
+setsid dbus-run-session -- claude-desktop --password-store=basic < /dev/null > /tmp/claude.log 2>&1 &
+sleep 20
+echo "NPROC=$(pgrep -cf /usr/lib/claude-desktop)"
+if [ -n "${VSCODE_PROXY_URI:-}" ]; then
+  echo "URL: $(echo "$VSCODE_PROXY_URI" | sed 's|{{port}}|6080|')vnc.html?path=proxy/6080/websockify&autoconnect=true&resize=remote"
+else
+  echo "URL: https://<domaine-du-service>/proxy/6080/vnc.html?path=proxy/6080/websockify&autoconnect=true&resize=remote"
+fi
+RUNEOF
+
+chmod +x "$RUN"
+chown -R onyxia:users /home/onyxia/work/claude-desktop 2>/dev/null || \
+  chown -R onyxia:onyxia /home/onyxia/work/claude-desktop 2>/dev/null || true
+
+# --- lancement en arriere-plan pour ne pas retarder le demarrage du service --
+if [ "$(id -u)" = 0 ]; then
+  setsid runuser -l onyxia -c "bash $RUN" < /dev/null > "$WORK/init.log" 2>&1 &
+else
+  setsid bash "$RUN" < /dev/null > "$WORK/init.log" 2>&1 &
+fi
+
+echo "Claude Desktop : installation lancee en arriere-plan (voir $WORK/init.log)"
+exit 0

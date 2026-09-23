@@ -94,6 +94,23 @@ if [ -e "$HOME/.config/google-chrome" ] && [ ! -L "$HOME/.config/google-chrome" 
 fi
 ln -sfn "$WORK/chrome-profile" "$HOME/.config/google-chrome"
 
+# --- 3ter. Historique Claude Code CLI (~/.claude/projects + sessions) via PVC -----
+# Persiste les transcripts de conversation (memoire, historique) sur le PVC $WORK,
+# sinon ils sont perdus a chaque redemarrage du pod (seul ~/.claude.json, l'auth,
+# est restaure via le secret Vault - cf. 3bis). Merge le contenu existant au 1er run.
+echo "[3ter/4] historique Claude Code CLI (projects + sessions)"
+mkdir -p "$HOME/.claude" "$WORK/claude-projects" "$WORK/claude-sessions"
+if [ -e "$HOME/.claude/projects" ] && [ ! -L "$HOME/.claude/projects" ]; then
+  cp -a "$HOME/.claude/projects/." "$WORK/claude-projects/" 2>/dev/null
+  rm -rf "$HOME/.claude/projects"
+fi
+ln -sfn "$WORK/claude-projects" "$HOME/.claude/projects"
+if [ -e "$HOME/.claude/sessions" ] && [ ! -L "$HOME/.claude/sessions" ]; then
+  cp -a "$HOME/.claude/sessions/." "$WORK/claude-sessions/" 2>/dev/null
+  rm -rf "$HOME/.claude/sessions"
+fi
+ln -sfn "$WORK/claude-sessions" "$HOME/.claude/sessions"
+
 # --- 3bis. Claude Code CLI : restauration depuis un secret Vault Onyxia -----
 # Si le secret "Mes secrets" a ete injecte comme variable d'environnement
 # (valeur = contenu de ~/.claude.json encode en base64), on le materialise ici.

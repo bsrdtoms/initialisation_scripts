@@ -94,6 +94,18 @@ if [ -e "$HOME/.config/google-chrome" ] && [ ! -L "$HOME/.config/google-chrome" 
 fi
 ln -sfn "$WORK/chrome-profile" "$HOME/.config/google-chrome"
 
+# --- 3bis. Claude Code CLI : restauration depuis un secret Vault Onyxia -----
+# Si le secret "Mes secrets" a ete injecte comme variable d'environnement
+# (valeur = contenu de ~/.claude.json encode en base64), on le materialise ici.
+# Ne remplace jamais un ~/.claude.json deja present (evite d'ecraser une
+# session locale plus recente par une copie potentiellement perimee).
+if [ ! -s "$HOME/.claude.json" ] && [ -n "${CLAUDE_CODE_JSON_B64:-}" ]; then
+  echo "[3bis/4] restauration de ~/.claude.json depuis le secret Vault CLAUDE_CODE_JSON_B64"
+  echo "$CLAUDE_CODE_JSON_B64" | base64 -d > "$HOME/.claude.json" 2>/tmp/claude-json-restore.log \
+    && chmod 600 "$HOME/.claude.json" \
+    || echo "  echec du decodage, voir /tmp/claude-json-restore.log"
+fi
+
 # --- 4. pile graphique + Claude Desktop + Chrome ----------------------------
 echo "[4/4] demarrage de la pile graphique"
 export DISPLAY=:1
